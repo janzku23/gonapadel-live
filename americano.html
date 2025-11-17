@@ -43,7 +43,6 @@
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";                    // pitkä jwt-teksti (anon public)
 
   // ✅ Luo asiakas PROJEKTIN URL:lla (EI functions-osoitetta!)
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
   const id = new URLSearchParams(location.search).get("id");
   const $title = document.getElementById("title");
@@ -53,62 +52,57 @@
   const $upd   = document.getElementById("updated");
   const $err   = document.getElementById("err");
 
-  if (!id) {
-    $title.textContent = "Virhe: puuttuva id";
-    throw new Error("no id");
-  }
+  if (!id) { $title.textContent = "Virhe: puuttuva id"; throw new Error("no id"); }
 
-  // Lataa kerran nykyinen data
   async function loadOnce(){
-    const { data, error } = await sb.from("americano").select("*").eq("id", id).single();
+    // ✅ maybeSingle: ei heitä virhettä, jos 0 riviä – palauttaa null
+    const { data, error } = await sb.from("americano")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
     if (error) {
-      console.error("select error:", error);
+      console.error(error);
       $err.textContent = "Virhe haussa: " + (error.message || String(error));
+      return;
+    }
+    if (!data) {
+      $title.textContent = "Turnausta ei löytynyt (id: " + id + ")";
+      $rows.innerHTML = "";
+      $meta.textContent = "–";
+      $state.textContent = "Ei dataa";
+      $state.className = "badge";
+      $upd.textContent = "Päivitetty: –";
       return;
     }
     render(data);
   }
   await loadOnce();
 
-  // Realtime-päivitykset
+  // Realtime pysyy samana (renderöi payload.new/old)
   sb.channel("realtime:americano")
     .on("postgres_changes", { event: "*", schema: "public", table: "americano", filter: `id=eq.${id}` },
-      (payload) => {
-        const d = payload.new ?? payload.old;
-        render(d);
-      })
-    .subscribe((status) => {
-      // debug
-      // console.log("realtime status:", status);
-    });
+      (payload) => render(payload.new ?? payload.old))
+    .subscribe();
 
   function render(d){
-    if (!d) {
-      $title.textContent = "Turnausta ei löydy";
-      $rows.innerHTML = "";
-      return;
-    }
-
+    if (!d) return;
     $title.textContent = d.name || "Americano";
     $meta.textContent  = `Kierros ${d.currentRound}/${d.totalRounds} • ${d.pointsPerRound} p/ottelu`;
     $state.textContent = d.isFinished ? "Päättynyt" : "Live";
     $state.className   = "badge " + (d.isFinished ? "" : "live");
 
-    const players = (d.players || []).slice()
-      .sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
-
+    const players = (d.players || []).slice().sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
     $rows.innerHTML = players.map(p => `
       <tr>
         <td>${esc(p.name||"-")}</td>
         <td class="right">${p.totalPoints ?? 0}</td>
         <td class="right pm">${esc(p.pm50 || "0")}</td>
-      </tr>`
-    ).join("");
+      </tr>`).join("");
 
-    // ✅ käytä camelCasea: updatedAt
     const dt = d.updatedAt ? new Date(d.updatedAt) : new Date();
     $upd.textContent = "Päivitetty: " + dt.toLocaleString();
-    $err.textContent = "";
+    if ($err) $err.textContent = "";
   }
 
   function esc(s){
