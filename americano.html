@@ -38,11 +38,12 @@
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  // 🔧 VAIHDA NÄMÄ KAHTA RIVIÄ OMIIN ARVOIHIN (Settings → API)
-  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co";   // esim. https://bxklcpvwtaeklormsdsk.supabase.co
-  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";                    // pitkä jwt-teksti (anon public)
+  // 🔧 VAIHDA NÄMÄ OMIIN ARVOIHIN (Settings → API)
+  const SUPABASE_URL  = "https://<YOUR-PROJECT-REF>.supabase.co"; // esim. https://bxklcpvwtaeklormsdsk.supabase.co
+  const SUPABASE_ANON = "<YOUR-ANON-PUBLIC-KEY>";
 
-  // ✅ Luo asiakas PROJEKTIN URL:lla (EI functions-osoitetta!)
+  // ✅ Luo asiakas PROJEKTIN URL:lla (EI functions-osoitetta)
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
   const id = new URLSearchParams(location.search).get("id");
   const $title = document.getElementById("title");
@@ -54,15 +55,17 @@
 
   if (!id) { $title.textContent = "Virhe: puuttuva id"; throw new Error("no id"); }
 
+  // pikkutuki: hae kenttä camelCase- tai pienikirjaisena
+  const getVal = (obj, camel, lower) => (obj?.[camel] ?? obj?.[lower]);
+
   async function loadOnce(){
-    // ✅ maybeSingle: ei heitä virhettä, jos 0 riviä – palauttaa null
     const { data, error } = await sb.from("americano")
       .select("*")
       .eq("id", id)
       .maybeSingle();
 
     if (error) {
-      console.error(error);
+      console.error("select error:", error);
       $err.textContent = "Virhe haussa: " + (error.message || String(error));
       return;
     }
@@ -79,7 +82,7 @@
   }
   await loadOnce();
 
-  // Realtime pysyy samana (renderöi payload.new/old)
+  // Realtime-päivitykset
   sb.channel("realtime:americano")
     .on("postgres_changes", { event: "*", schema: "public", table: "americano", filter: `id=eq.${id}` },
       (payload) => render(payload.new ?? payload.old))
@@ -87,10 +90,17 @@
 
   function render(d){
     if (!d) return;
+
+    const pointsPerRound = getVal(d, "pointsPerRound", "pointsperround");
+    const currentRound   = getVal(d, "currentRound",   "currentround");
+    const totalRounds    = getVal(d, "totalRounds",    "totalrounds");
+    const isFinished     = getVal(d, "isFinished",     "isfinished");
+    const updatedAtRaw   = getVal(d, "updatedAt",      "updatedat");
+
     $title.textContent = d.name || "Americano";
-    $meta.textContent  = `Kierros ${d.currentRound}/${d.totalRounds} • ${d.pointsPerRound} p/ottelu`;
-    $state.textContent = d.isFinished ? "Päättynyt" : "Live";
-    $state.className   = "badge " + (d.isFinished ? "" : "live");
+    $meta.textContent  = `Kierros ${currentRound}/${totalRounds} • ${pointsPerRound} p/ottelu`;
+    $state.textContent = isFinished ? "Päättynyt" : "Live";
+    $state.className   = "badge " + (isFinished ? "" : "live");
 
     const players = (d.players || []).slice().sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
     $rows.innerHTML = players.map(p => `
@@ -98,11 +108,12 @@
         <td>${esc(p.name||"-")}</td>
         <td class="right">${p.totalPoints ?? 0}</td>
         <td class="right pm">${esc(p.pm50 || "0")}</td>
-      </tr>`).join("");
+      </tr>`
+    ).join("");
 
-    const dt = d.updatedAt ? new Date(d.updatedAt) : new Date();
+    const dt = updatedAtRaw ? new Date(updatedAtRaw) : new Date();
     $upd.textContent = "Päivitetty: " + dt.toLocaleString();
-    if ($err) $err.textContent = "";
+    $err.textContent = "";
   }
 
   function esc(s){
