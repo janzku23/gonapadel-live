@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GonaPadel – Live</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(135deg,#ff6a00,#ffd200,#fff);margin:0;padding:24px;}
+  .wrap{max-width:800px;margin:0 auto;background:rgba(255,255,255,.9);border-radius:16px;padding:20px;box-shadow:0 12px 30px rgba(0,0,0,.1);}
+  h1{margin:0 0 4px;font-size:22px;}
+  .sub{color:#333;opacity:.8;margin-bottom:16px;}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:#eee;font-size:12px;margin-right:8px;}
+  .live{background:#e6ffec;}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;}
+  thead th{text-align:left;font-size:12px;color:#666;padding:10px;background:#fafafa;}
+  tbody td{padding:12px 10px;border-top:1px solid #f0f0f0;font-size:14px;}
+  .right{text-align:right;}
+  .pm{font-variant-numeric:tabular-nums;}
+  .footer{margin-top:10px;font-size:12px;color:#444;opacity:.8;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="title">Ladataan…</h1>
+  <div class="sub">
+    <span id="meta" class="badge">–</span>
+    <span id="state" class="badge live">Live</span>
+  </div>
+  <table>
+    <thead><tr><th>Pelaaja</th><th class="right">Pisteet</th><th class="right">±50%</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="footer" id="updated">Päivitetty: –</div>
+</div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co/functions/v1/Ymp-rist-";   // 🔧
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";               // 🔧
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  const id = new URLSearchParams(location.search).get("id");
+  const $title = document.getElementById("title");
+  const $meta  = document.getElementById("meta");
+  const $state = document.getElementById("state");
+  const $rows  = document.getElementById("rows");
+  const $upd   = document.getElementById("updated");
+
+  if(!id){ $title.textContent="Virhe: puuttuva id"; throw new Error("no id"); }
+
+  async function loadOnce(){
+    const { data } = await sb.from("americano").select("*").eq("id", id).single();
+    if(data) render(data);
+  }
+  loadOnce();
+
+  sb.channel("realtime:americano")
+    .on("postgres_changes", { event: "*", schema: "public", table: "americano", filter: `id=eq.${id}` },
+      (payload) => render(payload.new ?? payload.old))
+    .subscribe();
+
+  function render(d){
+    if(!d){ $title.textContent="Turnausta ei löydy"; $rows.innerHTML=""; return; }
+    $title.textContent = d.name || "Americano";
+    $meta.textContent  = `Kierros ${d.currentRound}/${d.totalRounds} • ${d.pointsPerRound} p/ottelu`;
+    $state.textContent = d.isFinished ? "Päättynyt" : "Live";
+    $state.className   = "badge " + (d.isFinished ? "" : "live");
+
+    const players = (d.players || []).slice().sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
+    $rows.innerHTML = players.map(p => `
+      <tr>
+        <td>${esc(p.name||"-")}</td>
+        <td class="right">${p.totalPoints ?? 0}</td>
+        <td class="right pm">${esc(p.pm50 || "0")}</td>
+      </tr>`).join("");
+
+    const dt = d.updatedat ? new Date(d.updatedat) : new Date();
+    $upd.textContent = "Päivitetty: " + dt.toLocaleString();
+  }
+  function esc(s){ return (s??"").toString().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+</script>
+</body>
+</html>
