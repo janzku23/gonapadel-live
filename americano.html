@@ -17,6 +17,7 @@
   .right{text-align:right;}
   .pm{font-variant-numeric:tabular-nums;}
   .footer{margin-top:10px;font-size:12px;color:#444;opacity:.8;}
+  .err{color:#b00020;margin-top:10px;font-size:12px;}
 </style>
 </head>
 <body>
@@ -31,12 +32,17 @@
     <tbody id="rows"></tbody>
   </table>
   <div class="footer" id="updated">Päivitetty: –</div>
+  <div class="err" id="err"></div>
 </div>
 
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co/functions/v1/Ymp-rist-";   // 🔧
-  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";               // 🔧
+
+  // 🔧 VAIHDA NÄMÄ KAHTA RIVIÄ OMIIN ARVOIHIN (Settings → API)
+  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co";   // esim. https://bxklcpvwtaeklormsdsk.supabase.co
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";                    // pitkä jwt-teksti (anon public)
+
+  // ✅ Luo asiakas PROJEKTIN URL:lla (EI functions-osoitetta!)
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
   const id = new URLSearchParams(location.search).get("id");
@@ -45,39 +51,72 @@
   const $state = document.getElementById("state");
   const $rows  = document.getElementById("rows");
   const $upd   = document.getElementById("updated");
+  const $err   = document.getElementById("err");
 
-  if(!id){ $title.textContent="Virhe: puuttuva id"; throw new Error("no id"); }
-
-  async function loadOnce(){
-    const { data } = await sb.from("americano").select("*").eq("id", id).single();
-    if(data) render(data);
+  if (!id) {
+    $title.textContent = "Virhe: puuttuva id";
+    throw new Error("no id");
   }
-  loadOnce();
 
+  // Lataa kerran nykyinen data
+  async function loadOnce(){
+    const { data, error } = await sb.from("americano").select("*").eq("id", id).single();
+    if (error) {
+      console.error("select error:", error);
+      $err.textContent = "Virhe haussa: " + (error.message || String(error));
+      return;
+    }
+    render(data);
+  }
+  await loadOnce();
+
+  // Realtime-päivitykset
   sb.channel("realtime:americano")
     .on("postgres_changes", { event: "*", schema: "public", table: "americano", filter: `id=eq.${id}` },
-      (payload) => render(payload.new ?? payload.old))
-    .subscribe();
+      (payload) => {
+        const d = payload.new ?? payload.old;
+        render(d);
+      })
+    .subscribe((status) => {
+      // debug
+      // console.log("realtime status:", status);
+    });
 
   function render(d){
-    if(!d){ $title.textContent="Turnausta ei löydy"; $rows.innerHTML=""; return; }
+    if (!d) {
+      $title.textContent = "Turnausta ei löydy";
+      $rows.innerHTML = "";
+      return;
+    }
+
     $title.textContent = d.name || "Americano";
     $meta.textContent  = `Kierros ${d.currentRound}/${d.totalRounds} • ${d.pointsPerRound} p/ottelu`;
     $state.textContent = d.isFinished ? "Päättynyt" : "Live";
     $state.className   = "badge " + (d.isFinished ? "" : "live");
 
-    const players = (d.players || []).slice().sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
+    const players = (d.players || []).slice()
+      .sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
+
     $rows.innerHTML = players.map(p => `
       <tr>
         <td>${esc(p.name||"-")}</td>
         <td class="right">${p.totalPoints ?? 0}</td>
         <td class="right pm">${esc(p.pm50 || "0")}</td>
-      </tr>`).join("");
+      </tr>`
+    ).join("");
 
-    const dt = d.updatedat ? new Date(d.updatedat) : new Date();
+    // ✅ käytä camelCasea: updatedAt
+    const dt = d.updatedAt ? new Date(d.updatedAt) : new Date();
     $upd.textContent = "Päivitetty: " + dt.toLocaleString();
+    $err.textContent = "";
   }
-  function esc(s){ return (s??"").toString().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+
+  function esc(s){
+    return (s??"").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
 </script>
 </body>
 </html>
+
