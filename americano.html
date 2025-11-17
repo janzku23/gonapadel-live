@@ -38,11 +38,10 @@
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  // 🔧 VAIHDA NÄMÄ OMIIN ARVOIHIN (Settings → API)
-  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.functions.supabase.co/upsert_americano"; // esim. https://bxklcpvwtaeklormsdsk.supabase.co
-  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
+  // 🔧 VAIHDA OMIIN ARVOIHIN
+  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co"; // Project URL (EI functions!)
+  const SUPABASE_ANON = "<UUSI_ANON_PUBLIC_KEY>";                    // anon key
 
-  // ✅ Luo asiakas PROJEKTIN URL:lla (EI functions-osoitetta)
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
   const id = new URLSearchParams(location.search).get("id");
@@ -55,7 +54,6 @@
 
   if (!id) { $title.textContent = "Virhe: puuttuva id"; throw new Error("no id"); }
 
-  // pikkutuki: hae kenttä camelCase- tai pienikirjaisena
   const getVal = (obj, camel, lower) => (obj?.[camel] ?? obj?.[lower]);
 
   async function loadOnce(){
@@ -82,9 +80,8 @@
   }
   await loadOnce();
 
-  // Realtime-päivitykset
   sb.channel("realtime:americano")
-    .on("postgres_changes", { event: "*", schema: "public", table: "americano", filter: `id=eq.${id}` },
+    .on("postgres_changes", { event:"*", schema:"public", table:"americano", filter:`id=eq.${id}` },
       (payload) => render(payload.new ?? payload.old))
     .subscribe();
 
