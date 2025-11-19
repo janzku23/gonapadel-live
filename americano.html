@@ -79,14 +79,22 @@
     margin-top:16px;
   }
   .round{
-    margin-top:12px;
+    margin-top:14px;
   }
   .round-title{
     font-size:13px;
     font-weight:700;
-    margin-bottom:4px;
+    margin-bottom:6px;
     color:#222;
+    display:flex;
+    align-items:center;
+    gap:6px;
   }
+  .round-check{
+    font-size:13px;
+    color:#0a8a0a;
+  }
+
   .court{
     border-radius:10px;
     background:#fafafa;
@@ -94,11 +102,22 @@
     margin-bottom:8px;
     border:1px solid #eee;
   }
+  .court-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:4px;
+  }
   .court-title{
     font-size:13px;
     font-weight:600;
-    margin-bottom:4px;
     color:#333;
+  }
+  .court-score{
+    font-size:13px;
+    font-weight:600;
+    color:#111;
+    font-variant-numeric:tabular-nums;
   }
   .court-teams{
     font-size:13px;
@@ -224,7 +243,7 @@
       </tr>`
     ).join("");
 
-    // 🔹 Kaikki kierrokset & kentät
+    // Kaikki kierrokset & kentät
     const matches = getVal(d, "matches", "matches") || [];
     if (!matches || matches.length === 0) {
       $courts.innerHTML = "";
@@ -245,13 +264,27 @@
         const games = byRound.get(r).slice()
           .sort((a,b) => (a.court ?? 0) - (b.court ?? 0));
 
-        const rows = games.map(m => {
+        // Onko kierros valmis? (kaikilla scoreA on numero)
+        const finished = games.every(m =>
+          typeof m.scoreA === "number"
+        );
+
+        const gamesHtml = games.map(m => {
           const court = m.court ?? m.courtIndex ?? "?";
           const teamA = (m.teamA || []).join(" & ");
           const teamB = (m.teamB || []).join(" & ");
+
+          let scoreText = "–";
+          if (typeof m.scoreA === "number" && typeof m.scoreB === "number") {
+            scoreText = `${m.scoreA}–${m.scoreB}`;
+          }
+
           return `
             <div class="court">
-              <div class="court-title">Kenttä ${esc(String(court))}</div>
+              <div class="court-header">
+                <div class="court-title">Kenttä ${esc(String(court))}</div>
+                <div class="court-score">${esc(scoreText)}</div>
+              </div>
               <div class="court-teams">
                 <span>${esc(teamA)}</span>
                 <span>vs</span>
@@ -263,8 +296,11 @@
 
         return `
           <div class="round">
-            <div class="round-title">Kierros ${r}/${totalRounds}</div>
-            ${rows}
+            <div class="round-title">
+              <span>Kierros ${r}/${totalRounds}</span>
+              ${finished ? '<span class="round-check">✓</span>' : ''}
+            </div>
+            ${gamesHtml}
           </div>
         `;
       }).join("");
@@ -288,4 +324,5 @@
 </script>
 </body>
 </html>
+
 
