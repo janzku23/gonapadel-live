@@ -5,19 +5,107 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>GonaPadel – Live</title>
 <style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(135deg,#ff6a00,#ffd200,#fff);margin:0;padding:24px;}
-  .wrap{max-width:800px;margin:0 auto;background:rgba(255,255,255,.9);border-radius:16px;padding:20px;box-shadow:0 12px 30px rgba(0,0,0,.1);}
-  h1{margin:0 0 4px;font-size:22px;}
-  .sub{color:#333;opacity:.8;margin-bottom:16px;}
-  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:#eee;font-size:12px;margin-right:8px;}
-  .live{background:#e6ffec;}
-  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;}
-  thead th{text-align:left;font-size:12px;color:#666;padding:10px;background:#fafafa;}
-  tbody td{padding:12px 10px;border-top:1px solid #f0f0f0;font-size:14px;}
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(135deg,#ff6a00,#ffd200,#fff);
+    margin:0;
+    padding:24px;
+  }
+  .wrap{
+    max-width:800px;
+    margin:0 auto;
+    background:rgba(255,255,255,.9);
+    border-radius:16px;
+    padding:20px;
+    box-shadow:0 12px 30px rgba(0,0,0,.1);
+  }
+  h1{
+    margin:0 0 4px;
+    font-size:22px;
+  }
+  .sub{
+    color:#333;
+    opacity:.8;
+    margin-bottom:16px;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border-radius:12px;
+    background:#eee;
+    font-size:12px;
+    margin-right:8px;
+  }
+  .live{ background:#e6ffec; }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:#fff;
+    border-radius:12px;
+    overflow:hidden;
+  }
+  thead th{
+    text-align:left;
+    font-size:12px;
+    color:#666;
+    padding:10px;
+    background:#fafafa;
+  }
+  tbody td{
+    padding:12px 10px;
+    border-top:1px solid #f0f0f0;
+    font-size:14px;
+  }
   .right{text-align:right;}
   .pm{font-variant-numeric:tabular-nums;}
-  .footer{margin-top:10px;font-size:12px;color:#444;opacity:.8;}
-  .err{color:#b00020;margin-top:10px;font-size:12px;}
+  .footer{
+    margin-top:10px;
+    font-size:12px;
+    color:#444;
+    opacity:.8;
+  }
+  .err{
+    color:#b00020;
+    margin-top:10px;
+    font-size:12px;
+  }
+
+  /* 🔽 Uudet tyylit kenttä- & ottelulistalle */
+  .courts{
+    margin-top:16px;
+  }
+  .courts-title{
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:6px;
+    color:#333;
+  }
+  .court{
+    border-radius:10px;
+    background:#fafafa;
+    padding:10px 12px;
+    margin-bottom:8px;
+    border:1px solid #eee;
+  }
+  .court-title{
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:4px;
+    color:#333;
+  }
+  .court-teams{
+    font-size:13px;
+    color:#444;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    align-items:center;
+  }
+  .court-teams span{
+    white-space:nowrap;
+  }
 </style>
 </head>
 <body>
@@ -27,10 +115,21 @@
     <span id="meta" class="badge">–</span>
     <span id="state" class="badge live">Live</span>
   </div>
+
   <table>
-    <thead><tr><th>Pelaaja</th><th class="right">Pisteet</th><th class="right">±</th></tr></thead>
+    <thead>
+      <tr>
+        <th>Pelaaja</th>
+        <th class="right">Pisteet</th>
+        <th class="right">±</th>
+      </tr>
+    </thead>
     <tbody id="rows"></tbody>
   </table>
+
+  <!-- 🔽 Kentät & ottelut tulevat tähän -->
+  <div class="courts" id="courts"></div>
+
   <div class="footer" id="updated">Päivitetty: –</div>
   <div class="err" id="err"></div>
 </div>
@@ -38,26 +137,31 @@
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  // 🔧 VAIHDA OMIIN ARVOIHIN
-  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co"; // Project URL (EI functions!)
-  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";                    // anon key
+  // 🔧 Projektin URL + anon-key (ei functions-URL)
+  const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
 
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  const id = new URLSearchParams(location.search).get("id");
+  const id     = new URLSearchParams(location.search).get("id");
   const $title = document.getElementById("title");
   const $meta  = document.getElementById("meta");
   const $state = document.getElementById("state");
   const $rows  = document.getElementById("rows");
   const $upd   = document.getElementById("updated");
   const $err   = document.getElementById("err");
+  const $courts = document.getElementById("courts");
 
-  if (!id) { $title.textContent = "Virhe: puuttuva id"; throw new Error("no id"); }
+  if (!id) {
+    $title.textContent = "Virhe: puuttuva id";
+    throw new Error("no id");
+  }
 
   const getVal = (obj, camel, lower) => (obj?.[camel] ?? obj?.[lower]);
 
   async function loadOnce(){
-    const { data, error } = await sb.from("americano")
+    const { data, error } = await sb
+      .from("americano")
       .select("*")
       .eq("id", id)
       .maybeSingle();
@@ -74,15 +178,20 @@
       $state.textContent = "Ei dataa";
       $state.className = "badge";
       $upd.textContent = "Päivitetty: –";
+      $courts.innerHTML = "";
       return;
     }
     render(data);
   }
+
   await loadOnce();
 
   sb.channel("realtime:americano")
-    .on("postgres_changes", { event:"*", schema:"public", table:"americano", filter:`id=eq.${id}` },
-      (payload) => render(payload.new ?? payload.old))
+    .on(
+      "postgres_changes",
+      { event:"*", schema:"public", table:"americano", filter:`id=eq.${id}` },
+      (payload) => render(payload.new ?? payload.old)
+    )
     .subscribe();
 
   function render(d){
@@ -99,7 +208,10 @@
     $state.textContent = isFinished ? "Päättynyt" : "Live";
     $state.className   = "badge " + (isFinished ? "" : "live");
 
-    const players = (d.players || []).slice().sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
+    // Pistetaulukko
+    const players = (d.players || []).slice()
+      .sort((a,b)=> (b.totalPoints||0)-(a.totalPoints||0));
+
     $rows.innerHTML = players.map(p => `
       <tr>
         <td>${esc(p.name||"-")}</td>
@@ -108,6 +220,32 @@
       </tr>`
     ).join("");
 
+    // 🔽 Kentät & ottelut (matches)
+    const matches = getVal(d, "matches", "matches") || [];
+    if (!matches || matches.length === 0) {
+      $courts.innerHTML = "";
+    } else {
+      const html = [
+        `<div class="courts-title">Käynnissä olevat ottelut</div>`,
+        ...matches.map(m => {
+          const court = m.court ?? m.courtIndex ?? "?";
+          const teamA = (m.teamA || []).join(" & ");
+          const teamB = (m.teamB || []).join(" & ");
+          return `
+            <div class="court">
+              <div class="court-title">Kenttä ${esc(String(court))}</div>
+              <div class="court-teams">
+                <span>${esc(teamA)}</span>
+                <span>vs</span>
+                <span>${esc(teamB)}</span>
+              </div>
+            </div>
+          `;
+        })
+      ].join("");
+      $courts.innerHTML = html;
+    }
+
     const dt = updatedAtRaw ? new Date(updatedAtRaw) : new Date();
     $upd.textContent = "Päivitetty: " + dt.toLocaleString();
     $err.textContent = "";
@@ -115,8 +253,11 @@
 
   function esc(s){
     return (s??"").toString()
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 </script>
 </body>
