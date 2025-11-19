@@ -39,6 +39,7 @@
     margin-right:8px;
   }
   .live{ background:#e6ffec; }
+
   table{
     width:100%;
     border-collapse:collapse;
@@ -60,6 +61,7 @@
   }
   .right{text-align:right;}
   .pm{font-variant-numeric:tabular-nums;}
+
   .footer{
     margin-top:10px;
     font-size:12px;
@@ -72,7 +74,7 @@
     font-size:12px;
   }
 
-  /* 🔽 Uudet tyylit kenttä- & ottelulistalle */
+  /* Kenttä- & ottelulista */
   .courts{
     margin-top:16px;
   }
@@ -127,7 +129,7 @@
     <tbody id="rows"></tbody>
   </table>
 
-  <!-- 🔽 Kentät & ottelut tulevat tähän -->
+  <!-- Kentät & ottelut -->
   <div class="courts" id="courts"></div>
 
   <div class="footer" id="updated">Päivitetty: –</div>
@@ -137,19 +139,19 @@
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  // 🔧 Projektin URL + anon-key (ei functions-URL)
+  // Supabase projektin URL + anon-key (EI functions-URL)
   const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
 
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  const id     = new URLSearchParams(location.search).get("id");
-  const $title = document.getElementById("title");
-  const $meta  = document.getElementById("meta");
-  const $state = document.getElementById("state");
-  const $rows  = document.getElementById("rows");
-  const $upd   = document.getElementById("updated");
-  const $err   = document.getElementById("err");
+  const id      = new URLSearchParams(location.search).get("id");
+  const $title  = document.getElementById("title");
+  const $meta   = document.getElementById("meta");
+  const $state  = document.getElementById("state");
+  const $rows   = document.getElementById("rows");
+  const $upd    = document.getElementById("updated");
+  const $err    = document.getElementById("err");
   const $courts = document.getElementById("courts");
 
   if (!id) {
@@ -177,8 +179,8 @@
       $meta.textContent = "–";
       $state.textContent = "Ei dataa";
       $state.className = "badge";
-      $upd.textContent = "Päivitetty: –";
       $courts.innerHTML = "";
+      $upd.textContent = "Päivitetty: –";
       return;
     }
     render(data);
@@ -220,7 +222,7 @@
       </tr>`
     ).join("");
 
-    // 🔽 Kentät & ottelut (matches)
+    // Kentät & ottelut (matches) – täysin turvallinen: jos ei ole, ei näytetä mitään
     const matches = getVal(d, "matches", "matches") || [];
     if (!matches || matches.length === 0) {
       $courts.innerHTML = "";
