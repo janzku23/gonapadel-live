@@ -74,15 +74,18 @@
     font-size:12px;
   }
 
-  /* Kenttä- & ottelulista */
+  /* Kierrokset & kenttälista */
   .courts{
     margin-top:16px;
   }
-  .courts-title{
+  .round{
+    margin-top:12px;
+  }
+  .round-title{
     font-size:13px;
-    font-weight:600;
-    margin-bottom:6px;
-    color:#333;
+    font-weight:700;
+    margin-bottom:4px;
+    color:#222;
   }
   .court{
     border-radius:10px;
@@ -129,7 +132,7 @@
     <tbody id="rows"></tbody>
   </table>
 
-  <!-- Kentät & ottelut -->
+  <!-- Kierrokset & kentät -->
   <div class="courts" id="courts"></div>
 
   <div class="footer" id="updated">Päivitetty: –</div>
@@ -139,7 +142,6 @@
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  // Supabase projektin URL + anon-key (EI functions-URL)
   const SUPABASE_URL  = "https://bxklcpvwtaeklormsdsk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
 
@@ -222,14 +224,28 @@
       </tr>`
     ).join("");
 
-    // Kentät & ottelut (matches) – täysin turvallinen: jos ei ole, ei näytetä mitään
+    // 🔹 Kaikki kierrokset & kentät
     const matches = getVal(d, "matches", "matches") || [];
     if (!matches || matches.length === 0) {
       $courts.innerHTML = "";
     } else {
-      const html = [
-        `<div class="courts-title">Käynnissä olevat ottelut</div>`,
-        ...matches.map(m => {
+      // Ryhmitellään kierroksen mukaan
+      const byRound = new Map();
+      for (const m of matches) {
+        const r = m.round ?? m.roundIndex ?? 0;
+        if (!byRound.has(r)) byRound.set(r, []);
+        byRound.get(r).push(m);
+      }
+
+      const sortedRounds = Array.from(byRound.keys())
+        .filter(r => r > 0)
+        .sort((a,b) => a - b);
+
+      const html = sortedRounds.map(r => {
+        const games = byRound.get(r).slice()
+          .sort((a,b) => (a.court ?? 0) - (b.court ?? 0));
+
+        const rows = games.map(m => {
           const court = m.court ?? m.courtIndex ?? "?";
           const teamA = (m.teamA || []).join(" & ");
           const teamB = (m.teamB || []).join(" & ");
@@ -243,8 +259,16 @@
               </div>
             </div>
           `;
-        })
-      ].join("");
+        }).join("");
+
+        return `
+          <div class="round">
+            <div class="round-title">Kierros ${r}/${totalRounds}</div>
+            ${rows}
+          </div>
+        `;
+      }).join("");
+
       $courts.innerHTML = html;
     }
 
