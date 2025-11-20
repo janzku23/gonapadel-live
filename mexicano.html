@@ -46,7 +46,6 @@
       margin-right: 6px;
     }
     .badge.green { background: #2e7d32; }
-    .badge.red   { background: #c62828; }
     .badge.orange{ background: #ef6c00; }
 
     table {
@@ -101,224 +100,221 @@
     </div>
   </div>
 
-<script>
-  "use strict";
+  <script>
+    "use strict";
 
-  const PROJECT_URL = "https://bxklcpvwtaeklormsdsk.supabase.co";
-  const ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
+    // Sama projekti/avaimet kuin appissa
+    const PROJECT_URL = "https://bxklcpvwtaeklormsdsk.supabase.co";
+    const ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
 
-  function getQueryId() {
-    const p = new URLSearchParams(window.location.search);
-    return p.get("id");
-  }
-
-  async function fetchTournament(id) {
-    const url = PROJECT_URL + "/rest/v1/mexicano?id=eq." +
-                encodeURIComponent(id) + "&select=*";
-    const res = await fetch(url, {
-      headers: {
-        "apikey": ANON_KEY,
-        "Authorization": "Bearer " + ANON_KEY
-      }
-    });
-    if (!res.ok) {
-      throw new Error("Supabase error: " + res.status);
-    }
-    const data = await res.json();
-    return data[0] || null;
-  }
-
-  function render(root, t) {
-    if (!t) {
-      root.innerHTML = (
-        '<div class="card error">' +
-          'Turnausta ei löytynyt. Varmista että linkki on oikein.' +
-        '</div>'
-      );
-      return;
+    function getQueryId() {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("id");
     }
 
-    // Vastaa upsert_mexicano-rowta:
-    // id, name, pointsperround, fullroundscompleted, targetfullrounds,
-    // courts, isfinished, updatedat, players (jsonb), matches (jsonb)
-    const players = Array.isArray(t.players) ? t.players : [];
-    const matches = Array.isArray(t.matches) ? t.matches : [];
-
-    const pointsPerRound = (typeof t.pointsperround === "number")
-      ? t.pointsperround
-      : "-";
-    const courts       = (typeof t.courts === "number") ? t.courts : "-";
-    const finished     = !!t.isfinished;
-    const fullDone     = (typeof t.fullroundscompleted === "number")
-      ? t.fullroundscompleted
-      : 0;
-    const targetRounds = (typeof t.targetfullrounds === "number")
-      ? t.targetfullrounds
-      : 0;
-
-    // Standings: LiveScoreDoc.Player → { name, totalPoints, pm50 }
-    const sortedPlayers = players
-      .slice()
-      .sort(function(a, b) {
-        const ta = (typeof a.totalPoints === "number") ? a.totalPoints : 0;
-        const tb = (typeof b.totalPoints === "number") ? b.totalPoints : 0;
-        return tb - ta;
-      });
-
-    // Viimeisin kierros matchien round-kentästä
-    let latestRoundNumber = 0;
-    for (let i = 0; i < matches.length; i++) {
-      const m = matches[i];
-      if (typeof m.round === "number" && m.round > latestRoundNumber) {
-        latestRoundNumber = m.round;
-      }
-    }
-    const latestRoundMatches = latestRoundNumber > 0
-      ? matches.filter(m => m.round === latestRoundNumber)
-      : [];
-
-    let html = "";
-
-    // HEADER
-    html += '<div class="card">';
-    html +=   '<div class="title">' +
-                (t.name || "Padel Mexicano") +
-              '</div>';
-    html +=   '<div class="subtitle">';
-    html +=     'Points / round: <b>' +
-                  pointsPerRound +
-                '</b> &bull; ';
-    html +=     'Courts: <b>' +
-                  courts +
-                '</b> &bull; ';
-    html +=     'Players: <b>' + players.length + '</b>';
-    html +=   '</div>';
-
-    html +=   '<div style="margin-bottom: 6px;">';
-    html +=     '<span class="badge ' + (finished ? 'green' : 'orange') + '">';
-    html +=       (finished ? 'Finished' : 'Live');
-    html +=     '</span>';
-    if (targetRounds > 0) {
-      html +=   '<span class="badge">';
-      html +=     'Rounds: ' + fullDone + ' / ' + targetRounds;
-      html +=   '</span>';
-    }
-    html +=   '</div>';
-
-    html +=   '<div class="small">';
-    html +=     'This page updates live when scores are entered in the GonaPadel app.';
-    html +=   '</div>';
-    html += '</div>';
-
-    // STANDINGS
-    html += '<div class="card">';
-    html +=   '<div class="title">Standings</div>';
-    html +=   '<table>';
-    html +=     '<thead>';
-    html +=       '<tr>';
-    html +=         '<th>#</th>';
-    html +=         '<th>Player</th>';
-    html +=         '<th style="text-align:right;">Total</th>';
-    html +=         '<th style="text-align:right;">±50</th>';
-    html +=       '</tr>';
-    html +=     '</thead>';
-    html +=     '<tbody>';
-
-    for (let idx = 0; idx < sortedPlayers.length; idx++) {
-      const p = sortedPlayers[idx];
-      const total = (typeof p.totalPoints === "number") ? p.totalPoints : 0;
-      const pm50  = (typeof p.pm50 === "string") ? p.pm50 : "";
-      html += '<tr>';
-      html +=   '<td>' + (idx + 1) + '</td>';
-      html +=   '<td>' + p.name + '</td>';
-      html +=   '<td style="text-align:right;">' + total + '</td>';
-      html +=   '<td style="text-align:right;">' + pm50 + '</td>';
-      html += '</tr>';
-    }
-
-    html +=     '</tbody>';
-    html +=   '</table>';
-    html += '</div>';
-
-    // VIIMEISIN KIERROS
-    if (latestRoundMatches.length > 0) {
-      html += '<div class="card">';
-      html +=   '<div class="title">Latest round – #' + latestRoundNumber + '</div>';
-      html +=   '<div class="subtitle">';
-      html +=     finished ? 'Tournament finished' : 'Round in progress / recently played';
-      html +=   '</div>';
-
-      for (let j = 0; j < latestRoundMatches.length; j++) {
-        const m = latestRoundMatches[j];
-        const aNames = Array.isArray(m.teamA) ? m.teamA.join(" & ") : "";
-        const bNames = Array.isArray(m.teamB) ? m.teamB.join(" & ") : "";
-        const a = (typeof m.scoreA === "number") ? m.scoreA : null;
-        const b = (typeof m.scoreB === "number") ? m.scoreB : null;
-
-        html += '<div class="court-card">';
-        html +=   '<div class="court-title">';
-        html +=     '<span>Court ' + (m.court || 0) + '</span>';
-        html +=     '<span class="small">' +
-                      (a !== null && b !== null ? 'Finished' : 'Playing') +
-                    '</span>';
-        html +=   '</div>';
-        html +=   '<div class="small" style="margin-bottom:4px;">';
-        html +=     aNames + ' vs ' + bNames;
-        html +=   '</div>';
-        html +=   '<div class="small">';
-        if (a !== null && b !== null) {
-          html +=   '<b>' + a + ' – ' + b + '</b>';
-        } else {
-          html +=   'No score yet';
+    async function fetchTournament(id) {
+      const url = PROJECT_URL + "/rest/v1/mexicano?id=eq." +
+                  encodeURIComponent(id) + "&select=*";
+      const res = await fetch(url, {
+        headers: {
+          "apikey": ANON_KEY,
+          "Authorization": "Bearer " + ANON_KEY
         }
+      });
+      if (!res.ok) {
+        throw new Error("Supabase error: " + res.status);
+      }
+      const data = await res.json();
+      return data[0] || null;
+    }
+
+    function render(root, t) {
+      if (!t) {
+        root.innerHTML = (
+          '<div class="card error">' +
+            'Turnausta ei löytynyt. Varmista että linkki on oikein.' +
+          '</div>'
+        );
+        return;
+      }
+
+      // 🔹 Vastaa upsert_mexicano-rowta:
+      // id, name, pointsperround, fullroundscompleted, targetfullrounds,
+      // courts, isfinished, players: [LiveScoreDoc.Player], matches: [LiveScoreDoc.Match]
+      const players = Array.isArray(t.players) ? t.players : [];
+      const matches = Array.isArray(t.matches) ? t.matches : [];
+
+      const pointsPerRound = (typeof t.pointsperround === "number")
+        ? t.pointsperround
+        : null;
+      const courts         = (typeof t.courts === "number") ? t.courts : "-";
+      const finished       = !!t.isfinished;
+      const fullDone       = (typeof t.fullroundscompleted === "number")
+        ? t.fullroundscompleted
+        : 0;
+      const targetRounds   = (typeof t.targetfullrounds === "number")
+        ? t.targetfullrounds
+        : 0;
+
+      // Standings: LiveScoreDoc.Player → { name, totalPoints, pm50 }
+      const sortedPlayers = players
+        .slice()
+        .sort((a, b) => {
+          const ta = (typeof a.totalPoints === "number") ? a.totalPoints : 0;
+          const tb = (typeof b.totalPoints === "number") ? b.totalPoints : 0;
+          return tb - ta;
+        });
+
+      // Viimeisin kierros: suurin matches[*].round
+      let latestRoundNumber = 0;
+      for (let i = 0; i < matches.length; i++) {
+        const r = matches[i].round;
+        if (typeof r === "number" && r > latestRoundNumber) {
+          latestRoundNumber = r;
+        }
+      }
+      const latestRoundMatches = latestRoundNumber > 0
+        ? matches.filter(m => m.round === latestRoundNumber)
+        : [];
+
+      let html = "";
+
+      // HEADER
+      html += '<div class="card">';
+      html +=   '<div class="title">' + (t.name || "Padel Mexicano") + '</div>';
+      html +=   '<div class="subtitle">';
+      html +=     'Points / round: <b>' + (pointsPerRound ?? "-") + '</b> &bull; ';
+      html +=     'Courts: <b>' + courts + '</b> &bull; ';
+      html +=     'Players: <b>' + players.length + '</b>';
+      html +=   '</div>';
+      html +=   '<div style="margin-bottom: 6px;">';
+      html +=     '<span class="badge ' + (finished ? 'green' : 'orange') + '">';
+      html +=       (finished ? 'Finished' : 'Live');
+      html +=     '</span>';
+      if (targetRounds > 0) {
+        html +=   '<span class="badge">';
+        html +=     'Rounds: ' + fullDone + ' / ' + targetRounds;
+        html +=   '</span>';
+      }
+      html +=   '</div>';
+      html +=   '<div class="small">';
+      html +=     'This page updates live when scores are entered in the GonaPadel app.';
+      html +=   '</div>';
+      html += '</div>';
+
+      // STANDINGS
+      html += '<div class="card">';
+      html +=   '<div class="title">Standings</div>';
+      html +=   '<table>';
+      html +=     '<thead>';
+      html +=       '<tr>';
+      html +=         '<th>#</th>';
+      html +=         '<th>Player</th>';
+      html +=         '<th style="text-align:right;">Total</th>';
+      html +=         '<th style="text-align:right;">±50</th>';
+      html +=       '</tr>';
+      html +=     '</thead>';
+      html +=     '<tbody>';
+
+      for (let i = 0; i < sortedPlayers.length; i++) {
+        const p = sortedPlayers[i];
+        const total = (typeof p.totalPoints === "number") ? p.totalPoints : 0;
+        const pm50  = (typeof p.pm50 === "string") ? p.pm50 : "";
+        html += '<tr>';
+        html +=   '<td>' + (i + 1) + '</td>';
+        html +=   '<td>' + p.name + '</td>';
+        html +=   '<td style="text-align:right;">' + total + '</td>';
+        html +=   '<td style="text-align:right;">' + pm50 + '</td>';
+        html += '</tr>';
+      }
+
+      html +=     '</tbody>';
+      html +=   '</table>';
+      html += '</div>';
+
+      // VIIMEISIN KIERROS – näytetään kaikki kentät heti
+      if (latestRoundMatches.length > 0) {
+        html += '<div class="card">';
+        html +=   '<div class="title">Latest round – #' + latestRoundNumber + '</div>';
+        html +=   '<div class="subtitle">';
+        html +=     finished ? 'Tournament finished' : 'Round in progress / recently played';
         html +=   '</div>';
+
+        for (let j = 0; j < latestRoundMatches.length; j++) {
+          const m = latestRoundMatches[j];
+          const aNames = Array.isArray(m.teamA)
+            ? m.teamA.join(" & ")
+            : "";
+          const bNames = Array.isArray(m.teamB)
+            ? m.teamB.join(" & ")
+            : "";
+          const a = (typeof m.scoreA === "number") ? m.scoreA : null;
+          const b = (a !== null && typeof pointsPerRound === "number")
+            ? (pointsPerRound - a)
+            : null;
+
+          html += '<div class="court-card">';
+          html +=   '<div class="court-title">';
+          html +=     '<span>Court ' + (m.court ?? 1) + '</span>';
+          html +=     '<span class="small">' +
+                        (a !== null ? 'Finished' : 'Playing') +
+                      '</span>';
+          html +=   '</div>';
+          html +=   '<div class="small" style="margin-bottom:4px;">';
+          html +=     aNames + ' vs ' + bNames;
+          html +=   '</div>';
+          html +=   '<div class="small">';
+          if (a !== null && b !== null) {
+            html +=   '<b>' + a + ' – ' + b + '</b>';
+          } else {
+            html +=   'No score yet';
+          }
+          html +=   '</div>';
+          html += '</div>';
+        }
+
         html += '</div>';
       }
 
-      html += '</div>';
+      root.innerHTML = html;
     }
 
-    root.innerHTML = html;
-  }
+    (async function main() {
+      const root = document.getElementById("root");
+      const id = getQueryId();
+      if (!id) {
+        root.innerHTML =
+          '<div class="card error">' +
+            'No tournament id in URL.<br/>' +
+            'Expected: <code>?id=YOUR_UUID</code>' +
+          '</div>';
+        return;
+      }
 
-  (async function main() {
-    const root = document.getElementById("root");
-    const id = getQueryId();
-    if (!id) {
-      root.innerHTML =
-        '<div class="card error">' +
-          'No tournament id in URL.<br/>' +
-          'Expected: <code>?id=YOUR_UUID</code>' +
-        '</div>';
-      return;
-    }
+      try {
+        const t = await fetchTournament(id);
+        render(root, t);
 
-    try {
-      const t = await fetchTournament(id);
-      render(root, t);
-
-      // Nopeampi pollaus: 2 s
-      setInterval(async function() {
-        try {
-          const updated = await fetchTournament(id);
-          render(root, updated);
-        } catch (e) {
-          console.error("Polling error", e);
-        }
-      }, 2000);
-    } catch (e) {
-      console.error(e);
-      const msg = (e && e.message) ? e.message : String(e);
-      root.innerHTML =
-        '<div class="card error">' +
-          'Error loading tournament.<br/>' +
-          msg +
-        '</div>';
-    }
-  })();
-</script>
-
+        // Nopeampi pollaus: 2 s (voit muuttaa esim. 1000 -> 1 s)
+        setInterval(async function() {
+          try {
+            const updated = await fetchTournament(id);
+            render(root, updated);
+          } catch (e) {
+            console.error("Polling error", e);
+          }
+        }, 2000);
+      } catch (e) {
+        console.error(e);
+        const msg = (e && e.message) ? e.message : String(e);
+        root.innerHTML =
+          '<div class="card error">' +
+            'Error loading tournament.<br/>' +
+            msg +
+          '</div>';
+      }
+    })();
+  </script>
 </body>
 </html>
-
 
