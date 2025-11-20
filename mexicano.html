@@ -102,8 +102,9 @@
   </div>
 
   <script>
-    const PROJECT_URL = "https://YOURPROJECT.supabase.co";
-    const ANON_KEY    = "YOUR_PUBLIC_ANON_KEY";
+    const PROJECT_URL = "https://bxklcpvwtaeklormsdsk.supabase.co/functions/v1/quick-worker";
+    const ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
+
 
     async function fetchTournament(id) {
       const url = `${PROJECT_URL}/rest/v1/mexicano?id=eq.${encodeURIComponent(id)}&select=*`;
