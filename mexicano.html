@@ -1,283 +1,196 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Mexicano Live – GonaPadel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      background: linear-gradient(135deg, #ff5252, #ffd54f, #ffffff);
-      min-height: 100vh;
-      color: #111;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      max-width: 900px;
-      width: 100%;
-      padding: 16px;
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 16px;
-      padding: 16px 18px 20px;
-      box-shadow: 0 14px 45px rgba(0,0,0,0.16), 0 10px 18px rgba(0,0,0,0.12);
-      margin-bottom: 16px;
-    }
-    .title {
-      font-size: 1.4rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .subtitle {
-      font-size: 0.9rem;
-      opacity: 0.8;
-      margin-bottom: 8px;
-    }
-    .badge {
-      display: inline-block;
-      font-size: 0.72rem;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #111;
-      color: #fff;
-      margin-right: 6px;
-    }
-    .badge.green { background: #2e7d32; }
-    .badge.red   { background: #c62828; }
-    .badge.orange{ background: #ef6c00; }
+<script>
+  const PROJECT_URL = "https://bxklcpvwtaeklormsdsk.supabase.co";
+  const ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
-    th, td {
-      padding: 6px 4px;
-      text-align: left;
-    }
-    th {
-      border-bottom: 1px solid rgba(0,0,0,0.12);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      opacity: 0.8;
-    }
-    tr:nth-child(even) td {
-      background: rgba(0,0,0,0.03);
-    }
-    .court-card {
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.7);
-      margin-bottom: 8px;
-      border: 1px solid rgba(0,0,0,0.08);
-    }
-    .court-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .small {
-      font-size: 0.8rem;
-      opacity: 0.8;
-    }
-    .loading, .error {
-      text-align: center;
-      padding: 32px 16px;
-      font-size: 0.95rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div id="root">
-      <div class="card loading">Loading Mexicano live…</div>
-    </div>
-  </div>
-
-  <script>
-    const PROJECT_URL = "https://bxklcpvwtaeklormsdsk.supabase.co";
-    const ANON_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4a2xjcHZ3dGFla2xvcm1zZHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyOTE4MzgsImV4cCI6MjA3ODg2NzgzOH0.bV5-yhGlnHkPBXY_vdirMZjWhPzoiL7OU7txTfexPBA";
-
-
-    async function fetchTournament(id) {
-      const url = `${PROJECT_URL}/rest/v1/mexicano?id=eq.${encodeURIComponent(id)}&select=*`;
-      const res = await fetch(url, {
-        headers: {
-          "apikey": ANON_KEY,
-          "Authorization": `Bearer ${ANON_KEY}`
-        }
-      });
-      if (!res.ok) throw new Error("Supabase error: " + res.status);
-      const data = await res.json();
-      return data[0] || null;
-    }
-
-    function getQueryId() {
-      const p = new URLSearchParams(window.location.search);
-      return p.get("id");
-    }
-
-    function render(root, t) {
-      if (!t) {
-        root.innerHTML = `
-          <div class="card error">
-            Turnausta ei löytynyt. Varmista että linkki on oikein.
-          </div>
-        `;
-        return;
+  async function fetchTournament(id) {
+    const url = `${PROJECT_URL}/rest/v1/mexicano?id=eq.${encodeURIComponent(id)}&select=*`;
+    const res = await fetch(url, {
+      headers: {
+        "apikey": ANON_KEY,
+        "Authorization": `Bearer ${ANON_KEY}`
       }
+    });
+    if (!res.ok) throw new Error("Supabase error: " + res.status);
+    const data = await res.json();
+    return data[0] || null;
+  }
 
-      const players = Array.isArray(t.players) ? t.players : [];
-      const rounds  = Array.isArray(t.rounds)  ? t.rounds  : [];
-      const finished = !!t.finished;
+  function getQueryId() {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("id");
+  }
 
-      // tee map uuid -> nimi
-      const nameById = {};
-      players.forEach(p => { nameById[p.id] = p.name; });
-
-      // standings pisteiden mukaan
-      const sortedPlayers = [...players].sort((a,b) => (b.total ?? 0) - (a.total ?? 0));
-
-      // etsi uusin kierros (suurin index)
-      let lastRound = null;
-      if (rounds.length > 0) {
-        lastRound = rounds.slice().sort((a,b) => (b.index ?? 0) - (a.index ?? 0))[0];
-      }
-
-      // UI
-      let html = "";
-
-      // HEADER + meta
-      html += `
-        <div class="card">
-          <div class="title">${t.name || "Padel Mexicano"}</div>
-          <div class="subtitle">
-            Points / round: <b>${t.points_per_round}</b> &bull;
-            Courts: <b>${t.courts}</b> &bull;
-            Players: <b>${players.length}</b>
-          </div>
-          <div style="margin-bottom: 6px;">
-            <span class="badge ${finished ? "green" : "orange"}">
-              ${finished ? "Finished" : "Live"}
-            </span>
-            ${rounds.length ? `<span class="badge">
-              Rounds generated: ${rounds.length}
-            </span>` : ""}
-          </div>
-          <div class="small">
-            This page updates live when scores are entered in the GonaPadel app.
-          </div>
+  function render(root, t) {
+    if (!t) {
+      root.innerHTML = `
+        <div class="card error">
+          Turnausta ei löytynyt. Varmista että linkki on oikein.
         </div>
       `;
+      return;
+    }
 
-      // STANDINGS
-      html += `
-        <div class="card">
-          <div class="title">Standings</div>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Player</th>
-                <th style="text-align:right;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sortedPlayers.map((p, idx) => `
+    // ✅ Nämä vastaavat sitä mitä upsert_mexicano kirjoittaa tauluun
+    const players = Array.isArray(t.players) ? t.players : [];
+    const matches = Array.isArray(t.matches) ? t.matches : [];
+    const finished = !!t.isfinished;
+
+    // pointsperround, currentround, totalrounds, courts ovat taulun sarakkeita
+    const pointsPerRound = t.pointsperround ?? "-";
+    const courts         = t.courts ?? "-";
+    const currentRound   = t.currentround ?? 0;
+    const totalRounds    = t.totalrounds ?? 0;
+
+    // 🏆 Pelaajien järjestys – LiveScoreDoc.Player: name, totalPoints, pm50
+    const sortedPlayers = [...players].sort(
+      (a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0)
+    );
+
+    // 🔁 Etsi uusin pelattu kierros matchien round-kentästä
+    let latestRoundNumber = null;
+    if (matches.length > 0) {
+      latestRoundNumber = matches
+        .map(m => m.round ?? 0)
+        .reduce((max, v) => v > max ? v : max, 0);
+    }
+    const latestRoundMatches = latestRoundNumber
+      ? matches.filter(m => m.round === latestRoundNumber)
+      : [];
+
+    // UI rakentelu
+    let html = "";
+
+    // HEADER
+    html += `
+      <div class="card">
+        <div class="title">${t.name || "Padel Mexicano"}</div>
+        <div class="subtitle">
+          Points / round: <b>${pointsPerRound}</b> &bull;
+          Courts: <b>${courts}</b> &bull;
+          Players: <b>${players.length}</b>
+        </div>
+        <div style="margin-bottom: 6px;">
+          <span class="badge ${finished ? "green" : "orange"}">
+            ${finished ? "Finished" : "Live"}
+          </span>
+          ${
+            totalRounds
+              ? `<span class="badge">Rounds (target): ${currentRound}/${totalRounds}</span>`
+              : ""
+          }
+        </div>
+        <div class="small">
+          This page updates live when scores are entered in the GonaPadel app.
+        </div>
+      </div>
+    `;
+
+    // STANDINGS
+    html += `
+      <div class="card">
+        <div class="title">Standings</div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th style="text-align:right;">Total</th>
+              <th style="text-align:right;">±50</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedPlayers
+              .map((p, idx) => `
                 <tr>
                   <td>${idx + 1}</td>
                   <td>${p.name}</td>
-                  <td style="text-align:right;">${p.total ?? 0}</td>
+                  <td style="text-align:right;">${p.totalPoints ?? 0}</td>
+                  <td style="text-align:right;">${p.pm50 ?? ""}</td>
                 </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
+              `)
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // VIIMEISIN KIERROS (matches + round/court/scoreA/scoreB)
+    if (latestRoundMatches.length > 0) {
+      html += `
+        <div class="card">
+          <div class="title">Latest round – #${latestRoundNumber}</div>
+          <div class="subtitle">
+            ${finished ? "Tournament finished" : "Round in progress / recently played"}
+          </div>
       `;
 
-      // VIIMEISIN KIERROS
-      if (lastRound && Array.isArray(lastRound.matches)) {
+      latestRoundMatches.forEach(m => {
+        const aNames = (m.teamA || []).join(" & ");
+        const bNames = (m.teamB || []).join(" & ");
+        const a = m.scoreA;
+        const b = m.scoreB;
+
         html += `
-          <div class="card">
-            <div class="title">Latest round – #${lastRound.index}</div>
-            <div class="subtitle">
-              ${lastRound.completed ? "Round completed" : "Round in progress"}
+          <div class="court-card">
+            <div class="court-title">
+              <span>Court ${ (m.court ?? 0) }</span>
+              <span class="small">${typeof a === "number" ? "Finished" : "Playing"}</span>
             </div>
+            <div class="small" style="margin-bottom:4px;">
+              ${aNames} vs ${bNames}
+            </div>
+            <div class="small">
+              ${
+                (typeof a === "number" && typeof b === "number")
+                  ? `<b>${a} – ${b}</b>`
+                  : "No score yet"
+              }
+            </div>
+          </div>
         `;
+      });
 
-        lastRound.matches.forEach(m => {
-          const aNames = (m.teamA || []).map(id => nameById[id] || "Player").join(" & ");
-          const bNames = (m.teamB || []).map(id => nameById[id] || "Player").join(" & ");
-          const a = m.pointsA;
-          const b = (typeof a === "number" && typeof t.points_per_round === "number")
-            ? (t.points_per_round - a)
-            : null;
-
-          html += `
-            <div class="court-card">
-              <div class="court-title">
-                <span>Court ${ (m.court ?? 0) + 1 }</span>
-                <span class="small">${a != null ? "Finished" : "Playing"}</span>
-              </div>
-              <div class="small" style="margin-bottom:4px;">
-                ${aNames} vs ${bNames}
-              </div>
-              <div class="small">
-                ${a != null && b != null ? `<b>${a} – ${b}</b>` : "No score yet"}
-              </div>
-            </div>
-          `;
-        });
-
-        html += `</div>`;
-      }
-
-      root.innerHTML = html;
+      html += `</div>`;
     }
 
-    (async function main() {
-      const root = document.getElementById("root");
-      const id = getQueryId();
-      if (!id) {
-        root.innerHTML = `
-          <div class="card error">
-            No tournament id in URL.<br/>
-            Expected: <code>?id=YOUR_UUID</code>
-          </div>
-        `;
-        return;
-      }
+    root.innerHTML = html;
+  }
 
-      try {
-        const t = await fetchTournament(id);
-        render(root, t);
+  (async function main() {
+    const root = document.getElementById("root");
+    const id = getQueryId();
+    if (!id) {
+      root.innerHTML = `
+        <div class="card error">
+          No tournament id in URL.<br/>
+          Expected: <code>?id=YOUR_UUID</code>
+        </div>
+      `;
+      return;
+    }
 
-        // yksinkertainen polling, esim. 10s välein
-        setInterval(async () => {
-          try {
-            const updated = await fetchTournament(id);
-            render(root, updated);
-          } catch(e) {
-            console.error("Polling error", e);
-          }
-        }, 10000);
-      } catch (e) {
-        console.error(e);
-        root.innerHTML = `
-          <div class="card error">
-            Error loading tournament.<br/>
-            ${e.message}
-          </div>
-        `;
-      }
-    })();
-  </script>
-</body>
-</html>
+    try {
+      const t = await fetchTournament(id);
+      render(root, t);
+
+      // yksinkertainen polling, esim. 10 s välein
+      setInterval(async () => {
+        try {
+          const updated = await fetchTournament(id);
+          render(root, updated);
+        } catch (e) {
+          console.error("Polling error", e);
+        }
+      }, 10000);
+    } catch (e) {
+      console.error(e);
+      root.innerHTML = `
+        <div class="card error">
+          Error loading tournament.<br/>
+          ${e.message}
+        </div>
+      `;
+    }
+  })();
+</script>
+
