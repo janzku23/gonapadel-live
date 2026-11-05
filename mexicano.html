@@ -5,15 +5,16 @@
   <title>Mexicano Live – GonaPadel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="live.css?v=3">
-<script src="live-presentation.js?v=2"></script>
+<script src="live-i18n.js?v=1"></script>
+<script src="live-presentation.js?v=4"></script>
 <meta name="theme-color" content="#ff9c19">
 </head>
 <body class="mexicano">
 <div class="page-shell">
 <header class="brand-header">
  <div class="brand-top"><span class="wordmark">GONA<span>PADEL</span></span><span class="live-label">LIVE SCORE / MEXICANO</span></div>
- <div class="brand-intro"><p class="eyebrow">KENTÄLTÄ SUORAAN SINULLE</p><h1>Peli elää. Seuraa mukana.</h1><p>Tulokset, sijoitukset ja kenttien tapahtumat yhdessä paikassa.</p></div>
- <div class="partners" aria-label="Bueno Padel, Seinä-Joe Padel ja Bueno Sport Bar">
+ <div class="brand-intro"><p class="eyebrow" data-i18n="eyebrow">KENTÄLTÄ SUORAAN SINULLE</p><h1 data-i18n="headline">Peli elää. Seuraa mukana.</h1><p data-i18n="intro">Tulokset, sijoitukset ja kenttien tapahtumat yhdessä paikassa.</p></div>
+ <div class="partners" aria-label="Bueno Padel, Seinä-Joe Padel &amp; Bueno Sport Bar">
   <div class="partner padel"><img src="bueno-padel.png" alt="Bueno Padel" width="512" height="205"></div>
   <div class="partner joe"><img src="seina-joe.png" alt="Seinä-Joe Padel" width="512" height="512"></div>
   <div class="partner bar"><img src="bueno-sport-bar.png" alt="Bueno Sport Bar" width="512" height="512"></div>
@@ -21,12 +22,13 @@
 </header>
   <main class="container">
     <div id="root">
-      <div class="card loading">Loading Mexicano live…</div>
+      <div class="card loading" data-i18n="loadingMexicano">Loading Mexicano live…</div>
     </div>
   </main>
 
   <script>
     "use strict";
+    const text = LiveI18n.t;
 
     // Sama projekti/avaimet kuin appissa
     const PROJECT_URL = "https://bxklcpvwtaeklormsdsk.supabase.co";
@@ -47,7 +49,7 @@
         }
       });
       if (!res.ok) {
-        throw new Error("Supabase error: " + res.status);
+        throw new Error(text("serviceError") + " " + res.status);
       }
       const data = await res.json();
       return data[0] || null;
@@ -57,7 +59,7 @@
       if (!t) {
         root.innerHTML = (
           '<div class="card error">' +
-            'Turnausta ei löytynyt. Varmista että linkki on oikein.' +
+            text('notFound') +
           '</div>'
         );
         return;
@@ -108,34 +110,34 @@
       html += '<div class="card">';
       html +=   '<div class="title">' + (t.name || "Padel Mexicano") + '</div>';
       html +=   '<div class="subtitle">';
-      html +=     'Points / round: <b>' + (pointsPerRound ?? "-") + '</b> &bull; ';
-      html +=     'Courts: <b>' + courts + '</b> &bull; ';
-      html +=     'Players: <b>' + players.length + '</b>';
+      html +=     text('pointsPerRound') + ': <b>' + (pointsPerRound ?? "-") + '</b> &bull; ';
+      html +=     text('courts') + ': <b>' + courts + '</b> &bull; ';
+      html +=     text('players') + ': <b>' + players.length + '</b>';
       html +=   '</div>';
       html +=   '<div style="margin-bottom: 6px;">';
       html +=     '<span class="badge ' + (finished ? 'green' : 'orange') + '">';
-      html +=       (finished ? 'Finished' : 'Live');
+      html +=       (finished ? text('finished') : text('live'));
       html +=     '</span>';
       if (targetRounds > 0) {
         html +=   '<span class="badge">';
-        html +=     'Rounds: ' + fullDone + ' / ' + targetRounds;
+        html +=     text('rounds') + ': ' + fullDone + ' / ' + targetRounds;
         html +=   '</span>';
       }
       html +=   '</div>';
       html +=   '<div class="small">';
-      html +=     'This page updates live when scores are entered in the GonaPadel app.';
+      html +=     text('liveHint');
       html +=   '</div>';
       html += '</div>';
 
       // STANDINGS
       html += '<div class="card">';
-      html +=   '<div class="title">Standings</div>';
+      html +=   '<div class="title">' + text('standings') + '</div>';
       html +=   '<table>';
       html +=     '<thead>';
       html +=       '<tr>';
       html +=         '<th>#</th>';
-      html +=         '<th>Player</th>';
-      html +=         '<th style="text-align:right;">Total</th>';
+      html +=         '<th>' + text('player') + '</th>';
+      html +=         '<th style="text-align:right;">' + text('points') + '</th>';
       html +=         '<th style="text-align:right;">±50</th>';
       html +=       '</tr>';
       html +=     '</thead>';
@@ -160,9 +162,9 @@
       // VIIMEISIN KIERROS – näytetään kaikki kentät heti
       if (latestRoundMatches.length > 0) {
         html += '<div class="card">';
-        html +=   '<div class="title">Latest round – #' + latestRoundNumber + '</div>';
+        html +=   '<div class="title">' + text('latestRound') + ' – #' + latestRoundNumber + '</div>';
         html +=   '<div class="subtitle">';
-        html +=     finished ? 'Tournament finished' : 'Round in progress / recently played';
+        html +=     finished ? text('tournamentFinished') : text('roundStatus');
         html +=   '</div>';
 
         for (let j = 0; j < latestRoundMatches.length; j++) {
@@ -180,9 +182,9 @@
 
           html += '<div class="court-card">';
           html +=   '<div class="court-title">';
-          html +=     '<span>Court ' + (m.court ?? 1) + '</span>';
+          html +=     '<span>' + text('court') + ' ' + (m.court ?? 1) + '</span>';
           html +=     '<span class="small">' +
-                        (a !== null ? 'Finished' : 'Playing') +
+                        (a !== null ? text('finished') : text('playing')) +
                       '</span>';
           html +=   '</div>';
           html +=   '<div class="small" style="margin-bottom:4px;">';
@@ -192,7 +194,7 @@
           if (a !== null && b !== null) {
             html +=   '<b>' + a + ' – ' + b + '</b>';
           } else {
-            html +=   'No score yet';
+            html +=   text('noScore');
           }
           html +=   '</div>';
           html += '</div>';
@@ -211,8 +213,8 @@
       if (!id) {
         root.innerHTML =
           '<div class="card error">' +
-            'No tournament id in URL.<br/>' +
-            'Expected: <code>?id=YOUR_UUID</code>' +
+            text('missingId') + '<br/>' +
+            text('expected') + ': <code>?id=YOUR_UUID</code>' +
           '</div>';
         return;
       }
@@ -235,13 +237,13 @@
         const msg = (e && e.message) ? e.message : String(e);
         root.innerHTML =
           '<div class="card error">' +
-            'Error loading tournament.<br/>' +
+            text('loadError') + '<br/>' +
             msg +
           '</div>';
       }
     })();
   </script>
-<footer class="site-footer"><span>GONA PADEL</span><span>Oma peli. Yhteinen kenttä.</span></footer>
+<footer class="site-footer"><span>GONA PADEL</span><span data-i18n="tagline">Oma peli. Yhteinen kenttä.</span></footer>
 </div>
 </body>
 </html>
