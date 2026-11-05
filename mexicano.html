@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <title>Mexicano Live – GonaPadel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="live.css">
+  <link rel="stylesheet" href="live.css?v=2">
+<script src="live-presentation.js?v=2"></script>
 <meta name="theme-color" content="#ff9c19">
 </head>
 <body class="mexicano">
@@ -201,6 +202,7 @@
       }
 
       root.innerHTML = html;
+      LivePresentation.update(t, "mexicano");
     }
 
     (async function main() {
