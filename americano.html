@@ -4,143 +4,29 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>GonaPadel – Live</title>
-<style>
-  body{
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    background:linear-gradient(135deg,#ff6a00,#ffd200,#fff);
-    margin:0;
-    padding:24px;
-  }
-  .wrap{
-    max-width:800px;
-    margin:0 auto;
-    background:rgba(255,255,255,.9);
-    border-radius:16px;
-    padding:20px;
-    box-shadow:0 12px 30px rgba(0,0,0,.1);
-  }
-  h1{
-    margin:0 0 4px;
-    font-size:22px;
-  }
-  .sub{
-    color:#333;
-    opacity:.8;
-    margin-bottom:16px;
-  }
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 10px;
-    border-radius:12px;
-    background:#eee;
-    font-size:12px;
-    margin-right:8px;
-  }
-  .live{ background:#e6ffec; }
-
-  table{
-    width:100%;
-    border-collapse:collapse;
-    background:#fff;
-    border-radius:12px;
-    overflow:hidden;
-  }
-  thead th{
-    text-align:left;
-    font-size:12px;
-    color:#666;
-    padding:10px;
-    background:#fafafa;
-  }
-  tbody td{
-    padding:12px 10px;
-    border-top:1px solid #f0f0f0;
-    font-size:14px;
-  }
-  .right{text-align:right;}
-  .pm{font-variant-numeric:tabular-nums;}
-
-  .footer{
-    margin-top:10px;
-    font-size:12px;
-    color:#444;
-    opacity:.8;
-  }
-  .err{
-    color:#b00020;
-    margin-top:10px;
-    font-size:12px;
-  }
-
-  /* Kierrokset & kenttälista */
-  .courts{
-    margin-top:16px;
-  }
-  .round{
-    margin-top:14px;
-  }
-  .round-title{
-    font-size:13px;
-    font-weight:700;
-    margin-bottom:6px;
-    color:#222;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .round-check{
-    font-size:13px;
-    color:#0a8a0a;
-  }
-
-  .court{
-    border-radius:10px;
-    background:#fafafa;
-    padding:10px 12px;
-    margin-bottom:8px;
-    border:1px solid #eee;
-  }
-  .court-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:4px;
-  }
-  .court-title{
-    font-size:13px;
-    font-weight:600;
-    color:#333;
-  }
-  .court-score{
-    font-size:13px;
-    font-weight:600;
-    color:#111;
-    font-variant-numeric:tabular-nums;
-  }
-  .court-teams{
-    font-size:13px;
-    color:#444;
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
-    align-items:center;
-  }
-  .court-teams span{
-    white-space:nowrap;
-  }
-</style>
+<link rel="stylesheet" href="live.css">
+<meta name="theme-color" content="#ff9c19">
 </head>
-<body>
-<div class="wrap">
+<body class="americano">
+<div class="page-shell">
+<header class="brand-header">
+ <div class="brand-top"><span class="wordmark">GONA<span>PADEL</span></span><span class="live-label">LIVE SCORE / AMERICANO</span></div>
+ <div class="brand-intro"><p class="eyebrow">KENTÄLTÄ SUORAAN SINULLE</p><h1>Peli elää. Seuraa mukana.</h1><p>Tulokset, sijoitukset ja kenttien tapahtumat yhdessä paikassa.</p></div>
+ <div class="partners" aria-label="Bueno Padel, Seinä-Joe Padel ja Bueno Sport Bar">
+  <div class="partner padel"><img src="bueno-padel.png" alt="Bueno Padel" width="512" height="205"></div>
+  <div class="partner joe"><img src="seina-joe.png" alt="Seinä-Joe Padel" width="512" height="512"></div>
+  <div class="partner bar"><img src="bueno-sport-bar.png" alt="Bueno Sport Bar" width="512" height="512"></div>
+ </div>
+</header>
+<main class="wrap">
   <h1 id="title">Ladataan…</h1>
   <div class="sub">
     <span id="meta" class="badge">–</span>
     <span id="state" class="badge live">Live</span>
   </div>
 
-  <table>
+  <h2 class="section-heading">Pistetaulukko</h2>
+  <table aria-label="Pelaajien sijoitukset">
     <thead>
       <tr>
         <th>Pelaaja</th>
@@ -152,11 +38,12 @@
   </table>
 
   <!-- Kierrokset & kentät -->
+  <h2 class="section-heading rounds-heading">Kierrokset &amp; kentät</h2>
   <div class="courts" id="courts"></div>
 
   <div class="footer" id="updated">Päivitetty: –</div>
   <div class="err" id="err"></div>
-</div>
+</main>
 
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -322,6 +209,8 @@
       .replaceAll("'","&#039;");
   }
 </script>
+<footer class="site-footer"><span>GONA PADEL</span><span>Oma peli. Yhteinen kenttä.</span></footer>
+</div>
 </body>
 </html>
 
