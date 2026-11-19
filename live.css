@@ -11,3 +11,11 @@
 /* Fluid display scale: phone 16px, Full HD ~22px, 4K up to 32px.
    Rem units reflow naturally, including when the browser zooms. */
 html{font-size:clamp(1rem,calc(.5rem + .75vw),2rem)}
+
+
+/* Court names may be longer than numeric labels. */
+.court-title { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
+.court-header { align-items: flex-start; }
+.court-score { flex-shrink: 0; }
+.court-title > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.court-title > .small { flex-shrink: 0; }

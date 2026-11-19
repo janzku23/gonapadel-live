@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <title>Mexicano Live – GonaPadel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="live.css?v=3">
+  <link rel="stylesheet" href="live.css?v=4">
 <script src="live-i18n.js?v=1"></script>
-<script src="live-presentation.js?v=4"></script>
+<script src="live-presentation.js?v=5"></script>
 <meta name="theme-color" content="#ff9c19">
 </head>
 <body class="mexicano">
@@ -71,17 +71,18 @@
       const players = Array.isArray(t.players) ? t.players : [];
       const matches = Array.isArray(t.matches) ? t.matches : [];
 
-      const pointsPerRound = (typeof t.pointsperround === "number")
-        ? t.pointsperround
-        : null;
-      const courts         = (typeof t.courts === "number") ? t.courts : "-";
-      const finished       = !!t.isfinished;
-      const fullDone       = (typeof t.fullroundscompleted === "number")
-        ? t.fullroundscompleted
-        : 0;
-      const targetRounds   = (typeof t.targetfullrounds === "number")
-        ? t.targetfullrounds
-        : 0;
+      const pointsPerRound = t.pointsPerRound ?? t.pointsperround ?? null;
+      const courts = t.courts ?? Math.max(0, ...matches.map(m => m.court ?? 0));
+      const finished = !!(t.isFinished ?? t.isfinished);
+      const byRound = new Map();
+      for (const match of matches) {
+        const round = match.round ?? match.roundIndex;
+        if (!byRound.has(round)) byRound.set(round, []);
+        byRound.get(round).push(match);
+      }
+      const completedRounds = [...byRound.values()].filter(games => games.length && games.every(m => typeof m.scoreA === 'number')).length;
+      const fullDone = t.fullRoundsCompleted ?? t.fullroundscompleted ?? completedRounds;
+      const targetRounds = t.targetFullRounds ?? t.targetfullrounds ?? t.totalRounds ?? t.totalrounds ?? 0;
 
       // Standings: LiveScoreDoc.Player → { name, totalPoints, pm50 }
       const sortedPlayers = players
@@ -108,7 +109,7 @@
 
       // HEADER
       html += '<div class="card">';
-      html +=   '<div class="title">' + (t.name || "Padel Mexicano") + '</div>';
+      html +=   '<div class="title">' + LivePresentation.escape(t.name || "Padel Mexicano") + '</div>';
       html +=   '<div class="subtitle">';
       html +=     text('pointsPerRound') + ': <b>' + (pointsPerRound ?? "-") + '</b> &bull; ';
       html +=     text('courts') + ': <b>' + courts + '</b> &bull; ';
@@ -149,9 +150,9 @@
         const pm50  = (typeof p.pm50 === "string") ? p.pm50 : "";
         html += '<tr>';
         html +=   '<td>' + (i + 1) + '</td>';
-        html +=   '<td>' + p.name + '</td>';
+        html +=   '<td>' + LivePresentation.escape(p.name) + '</td>';
         html +=   '<td style="text-align:right;">' + total + '</td>';
-        html +=   '<td style="text-align:right;">' + pm50 + '</td>';
+        html +=   '<td style="text-align:right;">' + LivePresentation.escape(pm50) + '</td>';
         html += '</tr>';
       }
 
@@ -176,19 +177,18 @@
             ? m.teamB.join(" & ")
             : "";
           const a = (typeof m.scoreA === "number") ? m.scoreA : null;
-          const b = (a !== null && typeof pointsPerRound === "number")
-            ? (pointsPerRound - a)
-            : null;
+          const b = (typeof m.scoreB === "number") ? m.scoreB
+            : (a !== null && typeof pointsPerRound === "number") ? pointsPerRound - a : null;
 
           html += '<div class="court-card">';
           html +=   '<div class="court-title">';
-          html +=     '<span>' + text('court') + ' ' + (m.court ?? 1) + '</span>';
+          html +=     '<span>' + LivePresentation.escape(LivePresentation.courtLabel(m)) + '</span>';
           html +=     '<span class="small">' +
                         (a !== null ? text('finished') : text('playing')) +
                       '</span>';
           html +=   '</div>';
           html +=   '<div class="small" style="margin-bottom:4px;">';
-          html +=     aNames + ' vs ' + bNames;
+          html +=     LivePresentation.escape(aNames) + ' vs ' + LivePresentation.escape(bNames);
           html +=   '</div>';
           html +=   '<div class="small">';
           if (a !== null && b !== null) {
@@ -247,4 +247,5 @@
 </div>
 </body>
 </html>
+
 

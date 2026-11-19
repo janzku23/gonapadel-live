@@ -4,6 +4,13 @@
   const t = global.LiveI18n.t;
   const preferences = new Map();
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Names are optional metadata; keep the numeric identity for ordering and old links.
+  function courtLabel(match) {
+    if (typeof match.courtName === 'string' && match.courtName.trim()) return match.courtName.trim();
+    const number = match.court ?? (Number.isInteger(match.courtIndex) ? match.courtIndex + 1 : '?');
+    return `${t('court')} ${number}`;
+  }
+
   const numeric = value => typeof value === 'number' && Number.isFinite(value);
   function summarize(data, mode) {
     const players = (Array.isArray(data.players) ? data.players : []).slice()
@@ -69,5 +76,6 @@
       if (finale.innerHTML !== html) finale.innerHTML = html;
     } else if (finale) finale.remove();
   }
-  global.LivePresentation = {update,summarize,finalMarkup};
+  global.LivePresentation = {update,summarize,finalMarkup,courtLabel,escape};
 })(typeof window !== 'undefined' ? window : globalThis);
+
